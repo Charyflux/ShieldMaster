@@ -1,704 +1,107 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS SECURITY • 2026</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0A0C0F;
-            --bg-secondary: #13161C;
-            --accent-primary: #00FF94;
-            --accent-secondary: #FF3B3B;
-            --glass-bg: rgba(18, 22, 28, 0.7);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg-primary);
-            color: #FFFFFF;
-            overflow: hidden;
-        }
-        
-        .glass-panel {
-            background: rgba(18, 22, 28, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 32px;
-        }
-        
-        .glass-card {
-            background: rgba(18, 22, 28, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 24px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .glass-card:hover {
-            border-color: rgba(0, 255, 148, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px -15px rgba(0, 255, 148, 0.2);
-        }
-        
-        .custom-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .custom-scroll::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-        }
-        
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: var(--accent-primary);
-            border-radius: 4px;
-        }
-        
-        .code-highlight {
-            background: rgba(255, 59, 59, 0.2);
-            border-left: 3px solid #FF3B3B;
-            padding-left: 12px;
-        }
-        
-        .terminal-text {
-            font-family: 'Monaco', 'Menlo', monospace;
-            color: #00FF94;
-            text-shadow: 0 0 10px rgba(0, 255, 148, 0.5);
-        }
-        
-        .badge-critical {
-            background: rgba(255, 59, 59, 0.1);
-            color: #FF3B3B;
-            border: 1px solid rgba(255, 59, 59, 0.3);
-        }
-        
-        .badge-high {
-            background: rgba(255, 136, 68, 0.1);
-            color: #FF8844;
-            border: 1px solid rgba(255, 136, 68, 0.3);
-        }
-        
-        .badge-medium {
-            background: rgba(255, 193, 7, 0.1);
-            color: #FFC107;
-            border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-        
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(0, 255, 148, 0.1);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        #vulnModal .relative {
-            animation: modalSlide 0.3s ease-out;
-        }
-        
-        @keyframes modalSlide {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .bounty-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #00FF94, #00CC77);
-            color: black;
-            padding: 16px 24px;
-            border-radius: 12px;
-            font-weight: bold;
-            box-shadow: 0 10px 30px rgba(0, 255, 148, 0.3);
-            z-index: 9999;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .line-number {
-            color: rgba(255,255,255,0.3);
-            margin-right: 12px;
-            font-size: 10px;
-            width: 30px;
-            text-align: right;
-            display: inline-block;
-        }
-
-        .vulnerable-line {
-            background: rgba(255, 59, 59, 0.15);
-            border-left: 3px solid #FF3B3B;
-        }
-    </style>
-</head>
-<body class="overflow-hidden">
-    <!-- Background Effects -->
-    <div class="fixed inset-0 overflow-hidden">
-        <div class="absolute top-0 -left-4 w-96 h-96 bg-[#00FF94] opacity-5 blur-[128px] rounded-full"></div>
-        <div class="absolute bottom-0 -right-4 w-96 h-96 bg-[#FF3B3B] opacity-5 blur-[128px] rounded-full"></div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="relative h-screen flex flex-col p-4 gap-4">
-        <!-- Header -->
-        <nav class="glass-panel px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="relative">
-                    <div class="w-3 h-3 bg-[#00FF94] rounded-full animate-pulse"></div>
-                    <div class="absolute inset-0 w-3 h-3 bg-[#00FF94] rounded-full animate-ping opacity-20"></div>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight">
-                        NEXUS 
-                        <span class="text-[#00FF94]">SECURITY</span>
-                    </h1>
-                    <span class="text-[10px] text-white/30 tracking-widest">ANÁLISE QUÂNTICA • 2026</span>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <div id="liveStatus" class="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full">
-                    <div class="w-1.5 h-1.5 bg-[#00FF94] rounded-full animate-pulse"></div>
-                    <span class="text-[10px] font-medium text-white/40 tracking-wider">LIVE • QUÂNTICO</span>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Grid -->
-        <div class="flex-1 grid grid-cols-12 gap-4 min-h-0">
-            <!-- Left Panel - Findings -->
-            <div class="col-span-4 glass-panel flex flex-col min-h-0">
-                <div class="p-6 border-b border-white/5">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-sm font-medium text-white/40 tracking-wider">MATRIZ DE AMEAÇAS</h2>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] px-2 py-1 bg-white/5 rounded-full">TEMPO REAL</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Score Meter -->
-                    <div class="mb-6">
-                        <div class="flex justify-between items-end mb-3">
-                            <span class="text-xs text-white/40">SCORE DE SEGURANÇA</span>
-                            <div class="flex items-baseline gap-1">
-                                <span id="scoreValue" class="text-4xl font-bold text-[#00FF94]">--</span>
-                                <span class="text-sm text-white/20">/100</span>
-                            </div>
-                        </div>
-                        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div id="scoreBar" class="h-full bg-gradient-to-r from-[#00FF94] to-[#00FF94]/50 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Summary Stats -->
-                    <div id="summaryStats" class="grid grid-cols-4 gap-2 mb-4 opacity-0 transition-opacity duration-500">
-                        <div class="text-center">
-                            <div class="text-xs text-white/40 mb-1">CRÍTICO</div>
-                            <div id="statCritical" class="text-lg font-bold text-[#FF3B3B]">0</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-xs text-white/40 mb-1">ALTO</div>
-                            <div id="statHigh" class="text-lg font-bold text-[#FF8844]">0</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-xs text-white/40 mb-1">MÉDIO</div>
-                            <div id="statMedium" class="text-lg font-bold text-[#FFC107]">0</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-xs text-white/40 mb-1">TOTAL</div>
-                            <div id="statTotal" class="text-lg font-bold text-white">0</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Scan Metadata -->
-                    <div id="scanMeta" class="text-[10px] text-white/20 hidden">
-                        <span id="filesScanned">0</span> ficheiros • <span id="linesAnalyzed">0</span> linhas • <span id="scanDuration">0</span>s
-                    </div>
-                </div>
-                
-                <!-- Findings List -->
-                <div id="findingsList" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-3">
-                    <div class="h-full flex flex-col items-center justify-center text-white/10">
-                        <svg class="w-12 h-12 mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <p class="text-xs font-mono">a_aguardar_scan</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Center Panel - Code Analysis -->
-            <div class="col-span-5 glass-panel flex flex-col min-h-0 relative">
-                <div class="p-4 border-b border-white/5 flex items-center justify-between">
-                    <h2 class="text-sm font-medium text-white/40 tracking-wider">ANALISADOR QUÂNTICO</h2>
-                    <div class="flex items-center gap-2">
-                        <span id="scanStatus" class="text-[10px] px-2 py-1 bg-white/5 rounded-full">⚡ INATIVO</span>
-                    </div>
-                </div>
-                
-                <!-- Code Output -->
-                <div id="codeOutput" class="flex-1 overflow-y-auto custom-scroll p-4 font-mono text-[11px] leading-relaxed">
-                    <div class="space-y-1 opacity-30">
-                        <div class="terminal-text">>_ NEXUS_QUANTUM_SCANNER v2.5.2026</div>
-                        <div class="terminal-text">>_ A INICIALIZAR PROTOCOLOS DE SEGURANÇA...</div>
-                        <div class="terminal-text">>_ PRONTO PARA ANÁLISE</div>
-                        <div class="mt-8 text-center text-white/10">[ A AGUARDAR SCAN DO REPOSITÓRIO ]</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Right Panel - Input & Control -->
-            <div class="col-span-3 glass-panel flex flex-col min-h-0">
-                <div class="p-6">
-                    <h2 class="text-sm font-medium text-white/40 tracking-wider mb-6">PAINEL DE CONTROLO</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] text-white/30 block mb-2">URL DO REPOSITÓRIO</label>
-                            <input type="text" id="repoUrl" 
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#00FF94] transition-all placeholder:text-white/10"
-                                placeholder="https://github.com/utilizador/repo">
-                        </div>
-                        
-                        <div>
-                            <label class="text-[10px] text-white/30 block mb-2">TOKEN DE ACESSO</label>
-                            <input type="password" id="githubToken" 
-                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#00FF94] transition-all"
-                                placeholder="github_pat_...">
-                        </div>
-                        
-                        <button onclick="startScan()" id="scanButton"
-                            class="w-full bg-[#00FF94] hover:bg-[#00FF94]/90 text-black font-bold py-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 group">
-                            <span>INICIAR SCAN QUÂNTICO</span>
-                            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                            </svg>
-                        </button>
-                        
-                        <div class="text-[10px] text-white/10 text-center mt-4">
-                            ⚡ encriptação quântica • análise em tempo real • 2026
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>SHIELD MASTER | CYBER DASHBOARD</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+    body { background: radial-gradient(circle at center, #0a111f 0%, #020408 100%); color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
+    .cyber-card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; }
+    .orbitron { font-family: 'Orbitron', sans-serif; }
+    .line-highlight { background: rgba(239, 68, 68, 0.25) !important; border-left: 4px solid #ef4444; }
+    .score-circle { transition: stroke-dashoffset 1s ease-in-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
+</style></head>
+<body class="h-screen flex flex-col p-4 gap-4">
+    <header class="cyber-card p-4 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)] text-white orbitron font-black text-xl">S</div>
+            <h1 class="orbitron font-black text-xl tracking-[4px] text-white">SHIELD<span class="text-blue-500">MASTER</span></h1>
         </div>
-    </div>
-
-    <!-- Modal -->
-    <div id="vulnModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="relative glass-panel w-96 p-6 transform transition-all">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-[#00FF94]">DETALHES DA VULNERABILIDADE</h3>
-                <button onclick="closeModal()" class="text-white/40 hover:text-white/80">✕</button>
-            </div>
-            <div id="modalContent" class="text-xs space-y-3">
-                <!-- Conteúdo dinâmico -->
-            </div>
-            <div class="mt-4 flex gap-2">
-                <button onclick="fixVulnerability()" id="fixButton" class="flex-1 bg-[#00FF94] text-black py-2 rounded-lg text-xs font-bold hover:bg-[#00FF94]/80 transition-all">
-                    CORRIGIR AGORA
-                </button>
-                <button onclick="closeModal()" class="flex-1 bg-white/5 py-2 rounded-lg text-xs hover:bg-white/10 transition-all">
-                    IGNORAR
-                </button>
-            </div>
+        <div class="flex gap-3 bg-black/40 p-2 rounded-xl border border-white/5">
+            <input type="password" id="token" class="bg-transparent border-none text-[10px] w-32 focus:ring-0 text-blue-400" placeholder="🗝️ GITHUB TOKEN">
+            <input type="text" id="url" class="bg-transparent border-none text-[10px] w-64 focus:ring-0 text-white" placeholder="🌐 REPOSITÓRIO URL">
+            <button onclick="runAudit()" id="btn" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg text-[10px] font-black orbitron transition-all">START SCAN</button>
         </div>
-    </div>
+    </header>
 
-    <script>
-        // Estado da aplicação
-        let currentFindings = [];
-        let currentFindingId = null;
-        
-        // Elementos DOM
-        const findingsList = document.getElementById('findingsList');
-        const codeOutput = document.getElementById('codeOutput');
-        const scanButton = document.getElementById('scanButton');
-        const scanStatus = document.getElementById('scanStatus');
-        const scoreValue = document.getElementById('scoreValue');
-        const scoreBar = document.getElementById('scoreBar');
-        const summaryStats = document.getElementById('summaryStats');
-        
-        function showBountyToast(message, isSuccess = true) {
-            const toast = document.createElement('div');
-            toast.className = 'bounty-toast';
-            toast.style.background = isSuccess ? 'linear-gradient(135deg, #00FF94, #00CC77)' : 'linear-gradient(135deg, #FF3B3B, #CC0000)';
-            toast.style.color = 'black';
-            toast.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">${isSuccess ? '🔥' : '❌'}</span>
-                    <div>
-                        <div class="font-bold">${isSuccess ? 'BUG BOUNTY HUNTER' : 'ERRO'}</div>
-                        <div class="text-[10px] opacity-75">${message}</div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
-
-        async function fixVulnerability() {
-            const finding = currentFindings.find(f => f.id === currentFindingId);
-            if (!finding) return;
-
-            const fixButton = document.getElementById('fixButton');
-            const originalText = fixButton.innerHTML;
-            fixButton.innerHTML = '<div class="spinner mx-auto"></div>';
-            fixButton.disabled = true;
-
-            try {
-                const response = await fetch('/fix', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        finding_id: finding.id,
-                        filepath: finding.filepath,
-                        line: finding.line,
-                        type: finding.title
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showBountyToast(data.message, true);
-                    
-                    // Atualizar o código com o conteúdo REAL corrigido
-                    if (data.fixed_content) {
-                        const lines = data.fixed_content.split('\n');
-                        let displayCode = '';
-                        lines.forEach((line, index) => {
-                            const lineNum = index + 1;
-                            if (lineNum === finding.line) {
-                                displayCode += `<div class="vulnerable-line py-0.5 px-2"><span class="line-number">${lineNum}</span><span class="text-[#00FF94]">✓ CORRIGIDO → </span>${escapeHtml(line)}</div>`;
-                            } else {
-                                displayCode += `<div class="py-0.5 px-2"><span class="line-number">${lineNum}</span>${escapeHtml(line)}</div>`;
-                            }
-                        });
-                        codeOutput.innerHTML = displayCode;
-                    }
-                    
-                    // Remover o finding da lista
-                    currentFindings = currentFindings.filter(f => f.id !== finding.id);
-                    renderFindings(currentFindings);
-                    
-                    // Atualizar estatísticas
-                    updateStats();
-                    
-                    setTimeout(() => closeModal(), 2000);
-                } else {
-                    showBountyToast(data.message, false);
-                }
-            } catch (error) {
-                showBountyToast('Erro ao corrigir vulnerabilidade', false);
-            } finally {
-                fixButton.innerHTML = originalText;
-                fixButton.disabled = false;
-            }
-        }
-
-        async function loadFileContent(filepath, line) {
-            try {
-                const response = await fetch('/file_content', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        filepath: filepath,
-                        line: line
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    let displayCode = '';
-                    data.code.forEach(lineData => {
-                        const classes = lineData.is_vulnerable ? 'vulnerable-line py-0.5 px-2' : 'py-0.5 px-2';
-                        const prefix = lineData.is_vulnerable ? '<span class="text-red-500 mr-1">⚠️</span>' : '';
-                        displayCode += `<div class="${classes}"><span class="line-number">${lineData.line}</span>${prefix}${escapeHtml(lineData.content)}</div>`;
-                    });
-                    codeOutput.innerHTML = displayCode;
-                    
-                    // Scroll para a linha vulnerável
-                    setTimeout(() => {
-                        const vulnerableLine = document.querySelector('.vulnerable-line');
-                        if (vulnerableLine) {
-                            vulnerableLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    }, 100);
-                }
-            } catch (error) {
-                console.error('Erro ao carregar ficheiro:', error);
-            }
-        }
-        
-        function showFinding(findingId, lineNumber, filePath, codeSnippet) {
-            currentFindingId = findingId;
-            
-            document.getElementById('scanStatus').innerHTML = `🔍 A INVESTIGAR LINHA ${lineNumber}`;
-            
-            document.querySelectorAll('.glass-card').forEach(card => {
-                card.style.borderColor = 'rgba(255,255,255,0.03)';
-                card.style.transform = 'none';
-            });
-            
-            const clickedCard = event.currentTarget;
-            clickedCard.style.borderColor = '#00FF94';
-            clickedCard.style.transform = 'scale(1.02)';
-            
-            // Carregar conteúdo REAL do ficheiro
-            loadFileContent(filePath, lineNumber);
-            
-            showVulnerabilityDetails(findingId);
-        }
-        
-        function showVulnerabilityDetails(findingId) {
-            const finding = currentFindings.find(f => f.id === findingId);
-            if (finding) {
-                document.getElementById('modalContent').innerHTML = `
-                    <div class="p-3 bg-[#FF3B3B]/10 rounded-lg">
-                        <span class="text-[#FF3B3B] font-bold">${finding.severity || 'CRÍTICO'}</span>
-                    </div>
-                    <div class="text-white/80">${finding.desc || 'Credenciais hardcoded detetadas'}</div>
-                    <div class="text-white/40 text-[9px] font-mono p-2 bg-black/30 rounded break-all">
-                        ${finding.evidence || 'Nenhuma evidência fornecida'}
-                    </div>
-                    <div class="text-[#00FF94] text-[9px]">
-                        💀 ${finding.exploit || 'Vulnerabilidade de segurança crítica'}
-                    </div>
-                    <div class="text-white/30 text-[8px]">
-                        CWE: ${finding.cwe || 'N/A'}
-                    </div>
-                    <div class="text-[10px] text-white/40">
-                        📁 Ficheiro: ${finding.file}
-                    </div>
-                `;
-            }
-            
-            document.getElementById('vulnModal').classList.remove('hidden');
-        }
-        
-        function closeModal() {
-            document.getElementById('vulnModal').classList.add('hidden');
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function updateStats() {
-            const critical = currentFindings.filter(f => f.severity === 'CRÍTICO').length;
-            const high = currentFindings.filter(f => f.severity === 'ALTO').length;
-            const medium = currentFindings.filter(f => f.severity === 'MÉDIO').length;
-            const total = currentFindings.length;
-
-            document.getElementById('statCritical').textContent = critical;
-            document.getElementById('statHigh').textContent = high;
-            document.getElementById('statMedium').textContent = medium;
-            document.getElementById('statTotal').textContent = total;
-        }
-        
-        function renderFindings(findings) {
-            if (!findings || findings.length === 0) {
-                findingsList.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-[#00FF94]">
-                        <svg class="w-12 h-12 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-xs font-mono">✓ NENHUMAS VULNERABILIDADES DETETADAS</p>
-                        <p class="text-[10px] text-white/20 mt-2">REPOSITÓRIO SEGURO</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            findingsList.innerHTML = findings.map(f => `
-                <div onclick="showFinding('${f.id}', ${f.line || 1}, '${f.filepath}', '${f.code_snippet || ''}')" 
-                    class="glass-card p-4 cursor-pointer group transition-all duration-300 hover:border-[#00FF94]/30">
-                    <div class="flex items-start gap-3">
-                        <div class="w-1 h-10 rounded-full" style="background: ${f.color || '#00FF94'}"></div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-medium text-white/80 truncate">${f.title || 'Vulnerabilidade'}</span>
-                                <span class="text-[8px] px-2 py-1 rounded-full ${f.severity === 'CRÍTICO' ? 'badge-critical' : f.severity === 'ALTO' ? 'badge-high' : 'badge-medium'}">
-                                    ${f.severity || 'INFO'}
-                                </span>
-                            </div>
-                            <p class="text-[10px] text-white/40 mb-2 line-clamp-2">${f.desc || ''}</p>
-                            <div class="flex items-center gap-2 text-[8px] text-white/20">
-                                <span>📁 ${f.file || 'desconhecido'}</span>
-                                <span>📍 linha ${f.line || '?'}</span>
-                            </div>
-                            <div class="mt-2 text-[9px] p-2 bg-black/30 rounded-lg text-white/30 font-mono truncate">
-                                ${f.evidence || ''}
-                            </div>
-                            <div class="mt-2 flex gap-1">
-                                <span class="text-[8px] px-1.5 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded">
-                                    🔍 CLIQUE PARA INVESTIGAR
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        async function startScan() {
-            const url = document.getElementById('repoUrl').value;
-            const token = document.getElementById('githubToken').value;
-            
-            if (!url) {
-                alert('Por favor insira um URL de repositório');
-                return;
-            }
-            
-            // UI Loading State
-            scanButton.disabled = true;
-            scanButton.innerHTML = `
-                <div class="spinner"></div>
-                <span>SCAN QUÂNTICO EM CURSO</span>
-            `;
-            scanStatus.innerHTML = '🌀 QUÂNTICO ATIVO';
-            
-            // Limpar resultados anteriores
-            findingsList.innerHTML = '';
-            codeOutput.innerHTML = `
-                <div class="space-y-1">
-                    <div class="terminal-text">>_ SCAN QUÂNTICO INICIADO</div>
-                    <div class="terminal-text">>_ ALVO: ${url}</div>
-                    <div class="terminal-text">>_ A ANALISAR ESTRUTURA DO REPOSITÓRIO...</div>
-                    <div class="terminal-text mt-4">>_ INSPEÇÃO PROFUNDA DE CÓDIGO EM CURSO</div>
-                    <div class="animate-pulse mt-8 text-center text-[#00FF94]/30">[ A SCANEAR ]</div>
-                </div>
-            `;
-            
-            try {
-                const formData = new URLSearchParams();
-                formData.append('repo_url', url);
-                formData.append('github_token', token);
-                
-                const response = await fetch('/scan', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Atualizar score
-                scoreValue.textContent = data.score;
-                scoreBar.style.width = data.score + '%';
-                
-                // Atualizar stats
-                if (data.summary) {
-                    document.getElementById('statCritical').textContent = data.summary.critical || 0;
-                    document.getElementById('statHigh').textContent = data.summary.high || 0;
-                    document.getElementById('statMedium').textContent = data.summary.medium || 0;
-                    document.getElementById('statTotal').textContent = data.summary.total || 0;
-                    summaryStats.classList.remove('opacity-0');
-                }
-                
-                // Atualizar metadata
-                if (data.metadata) {
-                    document.getElementById('filesScanned').textContent = data.metadata.files_scanned || 0;
-                    document.getElementById('linesAnalyzed').textContent = data.metadata.lines_analyzed || 0;
-                    document.getElementById('scanDuration').textContent = data.metadata.duration || 0;
-                    document.getElementById('scanMeta').classList.remove('hidden');
-                }
-                
-                // Renderizar findings
-                currentFindings = data.findings || [];
-                renderFindings(currentFindings);
-                
-                // Mostrar JSON raw
-                renderCodeOutput(data.raw || {});
-                
-                scanStatus.innerHTML = '✅ SCAN COMPLETO';
-                
-            } catch (error) {
-                console.error('Erro no scan:', error);
-                codeOutput.innerHTML = `
-                    <div class="text-red-500">
-                        >_ ERRO: ${error.message}
-                        <div class="mt-4 text-white/30">[ VERIFICAR ACESSO AO REPOSITÓRIO ]</div>
-                    </div>
-                `;
-                scanStatus.innerHTML = '❌ SCAN FALHOU';
-            } finally {
-                // Reset button
-                scanButton.disabled = false;
-                scanButton.innerHTML = `
-                    <span>INICIAR SCAN QUÂNTICO</span>
-                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+    <main class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
+        <div class="col-span-3 flex flex-col gap-4 overflow-hidden">
+            <div class="cyber-card p-6 flex flex-col items-center justify-center text-center">
+                <h3 class="orbitron text-[10px] text-slate-500 mb-4 tracking-widest uppercase">Security Score</h3>
+                <div class="relative flex items-center justify-center">
+                    <svg class="w-32 h-32">
+                        <circle cx="64" cy="64" r="58" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent"/>
+                        <circle id="score-ring" cx="64" cy="64" r="58" stroke="#2563eb" stroke-width="8" fill="transparent" stroke-dasharray="364.4" stroke-dashoffset="364.4" class="score-circle" stroke-linecap="round"/>
                     </svg>
-                `;
-            }
+                    <span id="score-text" class="absolute orbitron text-3xl font-black text-white">0%</span>
+                </div>
+                <div id="status-badge" class="mt-4 px-4 py-1 rounded-full text-[9px] font-black border border-white/10 uppercase tracking-widest bg-white/5">STANDBY</div>
+            </div>
+            <div class="cyber-card flex-1 p-4 overflow-y-auto">
+                <h3 class="orbitron text-[9px] text-slate-500 mb-4 tracking-widest uppercase">🚨 Incidents</h3>
+                <div id="findings-list" class="space-y-3"></div>
+            </div>
+        </div>
+        <div class="col-span-9 cyber-card flex flex-col overflow-hidden">
+            <div id="file-path" class="p-3 bg-white/5 border-b border-white/5 text-[10px] text-blue-400 font-mono italic">> Ready for analysis...</div>
+            <div id="code-container" class="flex-1 overflow-y-auto p-6 font-mono text-[12px] scroll-smooth">
+                <div class="h-full flex items-center justify-center opacity-10">
+                    <p class="orbitron text-sm">Waiting for repository input...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        function updateScore(score) {
+            const ring = document.getElementById('score-ring');
+            const text = document.getElementById('score-text');
+            const badge = document.getElementById('status-badge');
+            const offset = 364.4 - (364.4 * score / 100);
+            ring.style.strokeDashoffset = offset;
+            text.innerText = score + "%";
+            if(score >= 80) { ring.style.stroke = "#10b981"; badge.innerText = "🛡️ SECURE"; badge.style.color = "#10b981"; }
+            else if(score >= 50) { ring.style.stroke = "#f59e0b"; badge.innerText = "⚠️ WARNING"; badge.style.color = "#f59e0b"; }
+            else { ring.style.stroke = "#ef4444"; badge.innerText = "💀 DANGER"; badge.style.color = "#ef4444"; }
         }
-        
-        function renderCodeOutput(rawData) {
-            if (!rawData) return;
-            
+        async function runAudit() {
+            const btn = document.getElementById('btn');
+            btn.innerText = "RUNNING..."; btn.disabled = true;
             try {
-                const formattedJson = JSON.stringify(rawData, null, 2);
-                const lines = formattedJson.split('\n');
-                
-                codeOutput.innerHTML = lines.map((line, index) => {
-                    return `<div class="text-white/30">${escapeHtml(line)}</div>`;
+                const res = await fetch('/scan', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `repo_url=${encodeURIComponent(document.getElementById('url').value)}&github_token=${encodeURIComponent(document.getElementById('token').value)}`
+                });
+                const data = await res.json();
+                if(data.error) { alert(data.error); }
+                else {
+                    updateScore(data.score);
+                    document.getElementById('findings-list').innerHTML = data.findings.map(f => `
+                        <div onclick="loadFile('${f.file}', ${f.line})" class="p-3 border border-white/5 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 hover:border-blue-500/30 transition-all group">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[9px] font-black text-red-500 uppercase">${f.title}</span>
+                            </div>
+                            <div class="text-[8px] text-slate-400 group-hover:text-blue-300 transition-colors truncate">${f.file} : L${f.line}</div>
+                        </div>`).join('') || '<p class="text-green-500 orbitron text-[10px] p-4 text-center">✅ No Threats Found.</p>';
+                }
+            } catch(e) { alert("Scan failure."); }
+            btn.innerText = "START SCAN"; btn.disabled = false;
+        }
+        async function loadFile(path, line) {
+            document.getElementById('file-path').innerText = `> Viewing: ${path}`;
+            const res = await fetch('/fetch_file', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `filepath=${encodeURIComponent(path)}`
+            });
+            const data = await res.json();
+            if(data.content) {
+                document.getElementById('code-container').innerHTML = data.content.map((l, i) => {
+                    const n = i + 1;
+                    return `<div id="L${n}" class="flex gap-6 px-2 ${n === line ? 'line-highlight' : ''}">
+                        <span class="w-8 text-right opacity-20 select-none text-blue-500 font-bold">${n}</span>
+                        <span class="whitespace-pre text-slate-300">${l.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span>
+                    </div>`
                 }).join('');
-            } catch (e) {
-                codeOutput.innerHTML = '<div class="text-red-500">Erro ao processar resposta</div>';
+                setTimeout(() => { document.getElementById(`L${line}`)?.scrollIntoView({behavior:'smooth', block:'center'}); }, 100);
             }
         }
-        
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('⚡ NEXUS SECURITY 2026 - QUÂNTICO ATIVO');
-        });
     </script>
-</body>
-</html>
+</body></html>
