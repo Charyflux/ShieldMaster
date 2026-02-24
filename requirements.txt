@@ -1,0 +1,7 @@
+# Dependências AVEONE SaaS
+
+# Stripe SDK para processamento de pagamentos e webhooks
+stripe>=5.0.0
+
+# Opcional: para melhorar a segurança
+# python-dotenv>=0.19.0  # Para gerenciar variáveis de ambiente de forma segura

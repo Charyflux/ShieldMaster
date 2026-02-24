@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv/
+venv/
+ENV/
+*.env.*
+
+# Temp e scans
+.gitoken_audit_tmp/
+logs/
+data/
+*.db
+*.sqlite3
+*.log
+
+# Ferramentas e caches
+.cache/
+.cargo/
+.claude/
+.cloudflared/
+.config/
+.gemini/
+.gnupg/
+.local/
+.npm/
+.oh-my-zsh/
+.ollama/
+.rustup/
+.semgrep/
+.snap/
+.ssh/
+.vscode-server/
+.zcompdump*
+
+# Outros projetos e backups
+../*   # não sobe nada da pasta pai (opcional, cuidado!)
+ShieldMaster-v12/
+cyber_shield_pro/
+cloudfinder/
+enumrust/
+nuclei-templates/
+ParamSpider/
+lovableExpl/
+anew/
+multiplan-fixed/
+IAcrawl/
+
+# Arquivos sensíveis
+creds.txt
+cookies.txt
+jwt_tokens.txt
+payloads.txt
+tokens.txt
+users.txt
+*.key
+*.pem
